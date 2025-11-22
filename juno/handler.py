@@ -1,4 +1,7 @@
 import os
+import re
+import time
+import uuid
 
 import runpod
 from runpod.serverless import log
@@ -61,13 +64,39 @@ def handler(job):
         tools=job_input.get("tools", None),
     )
 
-    generated_text = ""
-
-    for chunk in model_output:
-        for output in chunk.outputs:
-            generated_text += output.text
-
-    return generated_text
+    result = model_output[0]
+    output = result.outputs[0]
+    
+    text = output.text
+    reasoning_content = None
+    
+    think_match = re.search(r'<think>(.*?)</think>', text, re.DOTALL)
+    if think_match:
+        reasoning_content = think_match.group(1).strip()
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    
+    message = {
+        "role": "assistant",
+        "reasoning_content": reasoning_content,
+        "content": text,
+    }
+    
+    return {
+        "id": os.getenv("RUNPOD_REQUEST_ID") or f"rp-{uuid.uuid4().hex[:8]}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": MODEL,
+        "choices": [{
+            "index": 0,
+            "message": message,
+            "finish_reason": output.finish_reason,
+        }],
+        "usage": {
+            "prompt_tokens": len(result.prompt_token_ids),
+            "completion_tokens": len(output.token_ids),
+            "total_tokens": len(result.prompt_token_ids) + len(output.token_ids),
+        }
+    }
 
 
 runpod.serverless.start({"handler": handler})

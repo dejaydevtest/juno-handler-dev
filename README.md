@@ -2,9 +2,6 @@
 
 A general-purpose vLLM handler for Runpod Serverless endpoints.
 
-> **Warning**
->
-> GGUF models are NOT supported.
 
 ## Usage
 
@@ -19,6 +16,30 @@ Send requests with your messages, optional tools, and sampling parameters:
     "temperature": 0.7,
     "max_tokens": 1024,
     "top_p": 0.9
+  }
+}
+```
+
+**Response format (OpenAI-compatible):**
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1234567890,
+  "model": "model-name",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "Hello! How can I help you?"
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 8,
+    "total_tokens": 18
   }
 }
 ```
@@ -85,6 +106,8 @@ response = client.chat.completions.create(
 ## Models
 
 Any HuggingFace model supported by vLLM works. For larger models, use quantized versions (look for `-AWQ` or `-GPTQ` suffix).
+
+GGUF models are **not** supported.
 
 ## Development
 
